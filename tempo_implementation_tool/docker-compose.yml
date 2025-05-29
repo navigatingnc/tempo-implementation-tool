@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with TimescaleDB extension
+  postgres:
+    image: timescale/timescaledb:latest-pg14
+    environment:
+      POSTGRES_USER: tempo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-temporocks}
+      POSTGRES_DB: tempo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init-postgres.sql:/docker-entrypoint-initdb.d/1-init.sql
+      - ./db/init-timescaledb.sql:/docker-entrypoint-initdb.d/2-timescale.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tempo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and real-time operations
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ for messaging
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: tempo
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-temporocks}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # FastAPI backend service
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://tempo:${POSTGRES_PASSWORD:-temporocks}@postgres:5432/tempo_db
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://tempo:${RABBITMQ_PASSWORD:-temporocks}@rabbitmq:5672/
+      - SECRET_KEY=${SECRET_KEY:-temporocks_secret_key_change_in_production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # React frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    command: npm start
+
+  # Grafana for visualization (optional - uncomment to enable)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   ports:
+  #     - "3001:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./grafana/provisioning:/etc/grafana/provisioning
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-temporocks}
+  #   depends_on:
+  #     - postgres
+
+  # Keycloak for authentication (optional - uncomment to enable)
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:latest
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - KEYCLOAK_ADMIN=admin
+  #     - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD:-temporocks}
+  #     - KC_DB=postgres
+  #     - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+  #     - KC_DB_USERNAME=tempo
+  #     - KC_DB_PASSWORD=${POSTGRES_PASSWORD:-temporocks}
+  #   depends_on:
+  #     - postgres
+  #   command: start-dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  # grafana_data:
