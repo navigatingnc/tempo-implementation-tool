@@ -1,6 +1,6 @@
 # Tempo: Productivity and Time Management Agent Scaffold
 
-This repository provides a ready-to-use implementation scaffold for Tempo, a productivity and time management agent. It's built upon a recommended tech stack analysis and includes Docker configuration, database setup, API scaffolding, and frontend components to accelerate your development process.
+This repository provides a ready-to-use implementation scaffold for Tempo, a productivity and time management agent. Includes Docker configuration, database setup, API scaffolding, and frontend components to accelerate development process.
 
 ## Prerequisites
 
