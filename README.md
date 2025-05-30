@@ -27,7 +27,7 @@ Before you begin, ensure you have the following software installed:
    - Modify the variables in your new `.env` file to suit your setup. Detailed explanations of these variables are in the "Configuration" section.
 4. **Start Services**: Launch the entire application stack using Docker Compose:
    ```bash
-   docker-compose up
+   sudo docker-compose up
    ```
 5. **Access Services**:
    - **API Documentation**: Available at [http://localhost:8000/docs](http://localhost:8000/docs)
