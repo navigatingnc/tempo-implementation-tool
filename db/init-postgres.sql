@@ -149,7 +149,7 @@ ORDER BY due_date ASC;
 
 CREATE OR REPLACE VIEW tempo.daily_schedule AS
 SELECT 
-    user_id,
+    COALESCE(calendar_events.user_id, time_blocks.user_id) AS user_id,
     COALESCE(calendar_events.start_time, time_blocks.start_time) AS start_time,
     COALESCE(calendar_events.end_time, time_blocks.end_time) AS end_time,
     COALESCE(calendar_events.title, time_blocks.title) AS title,
@@ -166,7 +166,7 @@ FULL OUTER JOIN
     (calendar_events.start_time, calendar_events.end_time) OVERLAPS 
     (time_blocks.start_time, time_blocks.end_time)
 ORDER BY 
-    user_id, start_time;
+    COALESCE(calendar_events.user_id, time_blocks.user_id), start_time;
 
 -- Create functions
 CREATE OR REPLACE FUNCTION tempo.update_updated_at()
