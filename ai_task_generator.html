@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Task Generator for Google Calendar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .control-group:hover {
+            transform: translateY(-5px);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .generate-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .tasks-container {
+            margin-top: 30px;
+        }
+
+        .task-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .task-card:hover {
+            transform: translateX(10px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .task-card.personal { border-left-color: #ff6b6b; }
+        .task-card.events { border-left-color: #4ecdc4; }
+        .task-card.home { border-left-color: #45b7d1; }
+        .task-card.landscape { border-left-color: #96ceb4; }
+        .task-card.small-engines { border-left-color: #ffeaa7; }
+        .task-card.auto { border-left-color: #fd79a8; }
+        .task-card.pest-control { border-left-color: #e17055; }
+
+        .task-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .task-details {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .calendar-badge {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .add-to-calendar-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .add-to-calendar-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .integration-info {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .integration-info h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .integration-info p {
+            color: #856404;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Task Generator</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="calendar">Calendar Category:</label>
+                <select id="calendar">
+                    <option value="personal">Personal</option>
+                    <option value="events">Events</option>
+                    <option value="home">Home</option>
+                    <option value="landscape">Landscape</option>
+                    <option value="small-engines">Small Engines</option>
+                    <option value="auto">Auto</option>
+                    <option value="pest-control">Pest Control</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="taskCount">Number of Tasks:</label>
+                <select id="taskCount">
+                    <option value="3">3 Tasks</option>
+                    <option value="5" selected>5 Tasks</option>
+                    <option value="7">7 Tasks</option>
+                    <option value="10">10 Tasks</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="priority">Priority Level:</label>
+                <select id="priority">
+                    <option value="mixed">Mixed Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="timeframe">Time Frame:</label>
+                <select id="timeframe">
+                    <option value="this-week">This Week</option>
+                    <option value="next-week">Next Week</option>
+                    <option value="this-month">This Month</option>
+                    <option value="next-month">Next Month</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="generate-btn" onclick="generateTasks()">
+            🎯 Generate AI Tasks
+        </button>
+
+        <div id="tasksContainer" class="tasks-container"></div>
+
+        <div class="integration-info">
+            <h3>📅 Google Calendar Integration</h3>
+            <p><strong>✅ Direct Calendar Integration:</strong> Click "Add to Google Calendar" to automatically open the task in Google Calendar</p>
+            <p><strong>🕐 Smart Scheduling:</strong> Tasks are automatically scheduled at realistic times based on category:</p>
+            <ul style="margin-left: 20px; color: #856404;">
+                <li><strong>Landscape:</strong> 8:00 AM (early morning for outdoor work)</li>
+                <li><strong>Home:</strong> 9:00 AM (morning home tasks)</li>
+                <li><strong>Pest Control:</strong> 9:00 AM (morning application)</li>
+                <li><strong>Personal:</strong> 10:00 AM (mid-morning personal time)</li>
+                <li><strong>Small Engines:</strong> 10:00 AM (equipment maintenance)</li>
+                <li><strong>Auto:</strong> 11:00 AM (late morning auto work)</li>
+                <li><strong>Events:</strong> 2:00 PM (afternoon planning)</li>
+            </ul>
+            <p><strong>⏱️ Duration-Based:</strong> End times are calculated based on each task's estimated duration</p>
+            <p><strong>📋 Categorized:</strong> Each task is tagged with its category for easy organization in your calendar</p>
+        </div>
+    </div>
+
+    <script>
+        const taskTemplates = {
+            personal: [
+                { task: "Review and update personal budget", duration: "1 hour", priority: "high" },
+                { task: "Schedule annual health checkup", duration: "30 minutes", priority: "high" },
+                { task: "Organize digital photos and documents", duration: "2 hours", priority: "medium" },
+                { task: "Plan weekend activities with family", duration: "45 minutes", priority: "medium" },
+                { task: "Update emergency contact information", duration: "20 minutes", priority: "high" },
+                { task: "Read one chapter of personal development book", duration: "30 minutes", priority: "low" },
+                { task: "Clean out email inbox and unsubscribe from unwanted lists", duration: "1 hour", priority: "medium" },
+                { task: "Back up important files to cloud storage", duration: "1 hour", priority: "high" },
+                { task: "Review and update social media privacy settings", duration: "30 minutes", priority: "medium" },
+                { task: "Plan and prepare healthy meals for the week", duration: "2 hours", priority: "medium" }
+            ],
+            events: [
+                { task: "Research and book venue for upcoming celebration", duration: "2 hours", priority: "high" },
+                { task: "Create guest list and send invitations", duration: "1 hour", priority: "high" },
+                { task: "Plan menu and order catering for event", duration: "1.5 hours", priority: "high" },
+                { task: "Coordinate with vendors for event setup", duration: "45 minutes", priority: "medium" },
+                { task: "Create event timeline and schedule", duration: "1 hour", priority: "medium" },
+                { task: "Shop for decorations and party supplies", duration: "2 hours", priority: "medium" },
+                { task: "Confirm RSVPs and finalize headcount", duration: "30 minutes", priority: "high" },
+                { task: "Prepare welcome bags or party favors", duration: "1.5 hours", priority: "low" },
+                { task: "Set up event registration or check-in system", duration: "45 minutes", priority: "medium" },
+                { task: "Create event playlist and test audio equipment", duration: "1 hour", priority: "medium" }
+            ],
+            home: [
+                { task: "Deep clean and organize master bedroom closet", duration: "3 hours", priority: "medium" },
+                { task: "Check and replace HVAC air filters", duration: "30 minutes", priority: "high" },
+                { task: "Clean out gutters and downspouts", duration: "2 hours", priority: "high" },
+                { task: "Organize garage and donate unused items", duration: "4 hours", priority: "medium" },
+                { task: "Test smoke detectors and replace batteries", duration: "45 minutes", priority: "high" },
+                { task: "Power wash deck and patio areas", duration: "2 hours", priority: "medium" },
+                { task: "Clean and organize pantry and kitchen cabinets", duration: "2.5 hours", priority: "medium" },
+                { task: "Inspect and clean dryer vents", duration: "1 hour", priority: "medium" },
+                { task: "Touch up paint on interior walls and trim", duration: "3 hours", priority: "low" },
+                { task: "Organize basement storage area", duration: "3 hours", priority: "low" }
+            ],
+            landscape: [
+                { task: "Prune fruit trees and flowering shrubs", duration: "2 hours", priority: "high" },
+                { task: "Apply pre-emergent herbicide to prevent weeds", duration: "1 hour", priority: "high" },
+                { task: "Plant seasonal flowers in garden beds", duration: "2.5 hours", priority: "medium" },
+                { task: "Mulch around trees and garden areas", duration: "3 hours", priority: "medium" },
+                { task: "Fertilize lawn and overseed bare spots", duration: "1.5 hours", priority: "high" },
+                { task: "Install or repair irrigation system components", duration: "2 hours", priority: "medium" },
+                { task: "Edge walkways and garden borders", duration: "1 hour", priority: "medium" },
+                { task: "Clean and organize garden tools and shed", duration: "1.5 hours", priority: "low" },
+                { task: "Plan and design new garden bed layout", duration: "1 hour", priority: "low" },
+                { task: "Harvest and preserve seasonal vegetables", duration: "2 hours", priority: "medium" }
+            ],
+            "small-engines": [
+                { task: "Change oil and filter in lawn mower", duration: "45 minutes", priority: "high" },
+                { task: "Clean and gap spark plugs in outdoor equipment", duration: "30 minutes", priority: "medium" },
+                { task: "Inspect and replace air filter in leaf blower", duration: "20 minutes", priority: "medium" },
+                { task: "Service and tune up chainsaw for winter use", duration: "1.5 hours", priority: "high" },
+                { task: "Check and adjust carburetor on hedge trimmer", duration: "45 minutes", priority: "medium" },
+                { task: "Replace pull cord on string trimmer", duration: "30 minutes", priority: "medium" },
+                { task: "Clean debris from cooling fins on mower engine", duration: "30 minutes", priority: "medium" },
+                { task: "Test and replace fuel lines if cracked", duration: "1 hour", priority: "high" },
+                { task: "Sharpen mower blades for clean cuts", duration: "45 minutes", priority: "high" },
+                { task: "Winterize equipment and add fuel stabilizer", duration: "1 hour", priority: "high" }
+            ],
+            auto: [
+                { task: "Schedule oil change and basic maintenance", duration: "2 hours", priority: "high" },
+                { task: "Check tire pressure and rotate tires", duration: "1 hour", priority: "medium" },
+                { task: "Inspect brake pads and fluid levels", duration: "45 minutes", priority: "high" },
+                { task: "Replace windshield wipers and washer fluid", duration: "30 minutes", priority: "medium" },
+                { task: "Clean and detail car interior and exterior", duration: "3 hours", priority: "low" },
+                { task: "Check battery terminals and clean if corroded", duration: "30 minutes", priority: "medium" },
+                { task: "Inspect belts and hoses for wear", duration: "45 minutes", priority: "medium" },
+                { task: "Update vehicle registration and insurance", duration: "30 minutes", priority: "high" },
+                { task: "Test all lights and replace bulbs if needed", duration: "30 minutes", priority: "medium" },
+                { task: "Check air filter and cabin filter condition", duration: "20 minutes", priority: "medium" }
+            ],
+            "pest-control": [
+                { task: "Inspect foundation for ant entry points and seal", duration: "1.5 hours", priority: "high" },
+                { task: "Apply perimeter treatment around house exterior", duration: "1 hour", priority: "high" },
+                { task: "Check and replace bait stations for rodents", duration: "45 minutes", priority: "medium" },
+                { task: "Treat lawn for grubs and soil insects", duration: "1 hour", priority: "medium" },
+                { task: "Inspect attic and basement for pest activity", duration: "1 hour", priority: "medium" },
+                { task: "Clean gutters to prevent mosquito breeding", duration: "1.5 hours", priority: "high" },
+                { task: "Apply beneficial nematodes to garden areas", duration: "45 minutes", priority: "low" },
+                { task: "Install or maintain pest exclusion screens", duration: "2 hours", priority: "medium" },
+                { task: "Treat carpenter ant trails with targeted bait", duration: "30 minutes", priority: "high" },
+                { task: "Monitor and document pest activity patterns", duration: "30 minutes", priority: "low" }
+            ]
+        };
+
+        function generateTasks() {
+            const calendar = document.getElementById('calendar').value;
+            const taskCount = parseInt(document.getElementById('taskCount').value);
+            const priority = document.getElementById('priority').value;
+            const timeframe = document.getElementById('timeframe').value;
+            
+            const container = document.getElementById('tasksContainer');
+            
+            // Show loading
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Generating AI tasks for your ${calendar} calendar...
+                </div>
+            `;
+            
+            // Simulate AI processing delay
+            setTimeout(() => {
+                const tasks = getRandomTasks(calendar, taskCount, priority);
+                displayTasks(tasks, calendar, timeframe);
+            }, 1500);
+        }
+
+        function getRandomTasks(calendar, count, priority) {
+            const templates = taskTemplates[calendar];
+            const shuffled = [...templates].sort(() => 0.5 - Math.random());
+            let selected = shuffled.slice(0, count);
+            
+            if (priority !== 'mixed') {
+                selected = selected.filter(task => task.priority === priority);
+                while (selected.length < count && templates.length > selected.length) {
+                    const remaining = templates.filter(t => !selected.includes(t));
+                    if (remaining.length > 0) {
+                        selected.push(remaining[Math.floor(Math.random() * remaining.length)]);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            return selected;
+        }
+
+        function displayTasks(tasks, calendar, timeframe) {
+            const container = document.getElementById('tasksContainer');
+            const calendarName = calendar.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            let html = `<h2 style="color: #333; margin-bottom: 20px;">Generated Tasks for ${calendarName} Calendar</h2>`;
+            
+            tasks.forEach((task, index) => {
+                const dueDate = generateDueDate(timeframe, index);
+                html += `
+                    <div class="task-card ${calendar}">
+                        <div class="task-title">${task.task}</div>
+                        <div class="task-details">
+                            <strong>Estimated Duration:</strong> ${task.duration}<br>
+                            <strong>Due Date:</strong> ${dueDate}<br>
+                            <strong>Priority:</strong> ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                        </div>
+                        <div class="task-meta">
+                            <span class="calendar-badge">${calendarName}</span>
+                            <button class="add-to-calendar-btn" onclick="addToGoogleCalendar('${task.task}', '${dueDate}', '${task.duration}', '${calendarName}'); event.stopPropagation();">
+                                📅 Add to Google Calendar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function generateDueDate(timeframe, index) {
+            const now = new Date();
+            let dueDate = new Date(now);
+            
+            switch (timeframe) {
+                case 'this-week':
+                    dueDate.setDate(now.getDate() + (index % 7));
+                    break;
+                case 'next-week':
+                    dueDate.setDate(now.getDate() + 7 + (index % 7));
+                    break;
+                case 'this-month':
+                    dueDate.setDate(now.getDate() + (index * 3));
+                    break;
+                case 'next-month':
+                    dueDate.setMonth(now.getMonth() + 1);
+                    dueDate.setDate(1 + (index * 3));
+                    break;
+            }
+            
+            return dueDate.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function addToGoogleCalendar(task, dueDate, duration, category) {
+            const startDate = new Date(dueDate);
+            
+            // Set realistic daytime hours based on task category
+            let startHour = 9; // Default 9 AM
+            switch(category.toLowerCase()) {
+                case 'personal':
+                    startHour = 10; // 10 AM for personal tasks
+                    break;
+                case 'events':
+                    startHour = 14; // 2 PM for event planning
+                    break;
+                case 'home':
+                    startHour = 9; // 9 AM for home tasks
+                    break;
+                case 'landscape':
+                    startHour = 8; // 8 AM for outdoor work
+                    break;
+                case 'small engines':
+                    startHour = 10; // 10 AM for equipment maintenance
+                    break;
+                case 'auto':
+                    startHour = 11; // 11 AM for auto tasks
+                    break;
+                case 'pest control':
+                    startHour = 9; // 9 AM for pest control
+                    break;
+            }
+            
+            startDate.setHours(startHour, 0, 0, 0);
+            
+            // Calculate end time based on duration
+            const durationMatch = duration.match(/(\d+(?:\.\d+)?)\s*(hour|minute)/i);
+            let durationMinutes = 60; // Default 1 hour
+            
+            if (durationMatch) {
+                const value = parseFloat(durationMatch[1]);
+                const unit = durationMatch[2].toLowerCase();
+                
+                if (unit.includes('hour')) {
+                    durationMinutes = value * 60;
+                } else if (unit.includes('minute')) {
+                    durationMinutes = value;
+                }
+            }
+            
+            const endDate = new Date(startDate.getTime() + (durationMinutes * 60 * 1000));
+            
+            const formatDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+            
+            const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`[${category}] ${task}`)}&dates=${formatDate(startDate)}/${formatDate(endDate)}&details=${encodeURIComponent(`Duration: ${duration}\nCategory: ${category}\n\nGenerated by AI Task Generator`)}&sf=true&output=xml`;
+            
+            // Open in new tab and show confirmation
+            window.open(calendarUrl, '_blank');
+            
+            // Show user feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✓ Opening Calendar...';
+            button.style.background = '#28a745';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#4CAF50';
+            }, 2000);
+        }
+
+        // Generate initial tasks on page load
+        window.addEventListener('load', () => {
+            generateTasks();
+        });
+    </script>
+</body>
+</html>
